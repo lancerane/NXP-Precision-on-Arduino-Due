@@ -5,7 +5,10 @@ Based on the Adafruit libraries https://github.com/adafruit/Adafruit_FXOS8700 an
 
 ## Usage
 Connect each sensor to a separate bus (SDA0/SCL0, SDA1/SCL1) as described here: https://learn.adafruit.com/nxp-precision-9dof-breakout/pinout.
-Run /examples/dual_bus_read/dual_bus_read.ino to read raw sensor data. 
+
+```
+/examples/dual_bus_read/dual_bus_read.ino 
+```
 Note that the values provided are raw 16/ 14bit integer values.
 
 ## Default settings
