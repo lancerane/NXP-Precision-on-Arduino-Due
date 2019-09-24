@@ -1,20 +1,3 @@
-/***************************************************
-  This is a library for the FXOS8700 Accel/Mag
-
-  Designed specifically to work with the Adafruit FXOS8700 Breakout
-  ----> https://www.adafruit.com/products/
-
-  These sensors use I2C to communicate, 2 pins (I2C)
-  are required to interface.
-
-  Adafruit invests time and resources providing this open source code,
-  please support Adafruit and open-source hardware by purchasing
-  products from Adafruit!
-
-  Written by Kevin "KTOWN" Townsend for Adafruit Industries.
-  BSD license, all text above must be included in any redistribution
- ****************************************************/
-
  #include "Arduino.h"
 
 #include <Wire.h>

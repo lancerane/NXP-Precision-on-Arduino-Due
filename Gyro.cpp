@@ -9,13 +9,6 @@
  PRIVATE FUNCTIONS
  ***************************************************************************/
 
-/**************************************************************************/
-/*!
-    @brief  Abstract away platform differences in Arduino wire library
-    @param reg The register address to write to
-    @param value The value to write to the specified register
-*/
-/**************************************************************************/
 void Gyro::write8(byte reg, byte value)
 {
   _wire.beginTransmission(FXAS21002C_ADDRESS);
@@ -24,12 +17,6 @@ void Gyro::write8(byte reg, byte value)
   _wire.endTransmission();
 }
 
-/**************************************************************************/
-/*!
-    @param reg The register address to read from
-    @returns The byte read from the I2C bus at the specified reg
-*/
-/**************************************************************************/
 byte Gyro::read8(byte reg)
 {
   uint8_t value;
