@@ -1,8 +1,6 @@
-
 #include "Arduino.h"
 #include <Wire.h>
 #include <limits.h>
-
 #include "Gyro.h"
 
 /***************************************************************************
@@ -42,24 +40,14 @@ byte Gyro::checkstatus()
 
 {
   return read8(GYRO_REGISTER_STATUS);
-  // uint8_t value;
-
-  // _wire.beginTransmission((byte)FXAS21002C_ADDRESS);
-  // _wire.write(GYRO_REGISTER_STATUS); 
-  // _wire.endTransmission();
-  // _wire.requestFrom((byte)FXAS21002C_ADDRESS, (byte)1);
-  // value = _wire.read();
-
-  // return value;
 }
 
 bool Gyro::checktiming()
 
-  // The sensor has a struct var containing two times corresponding to ODRs.
   // Get these by continuously polling the registers for fresh data. Throw away the first packet, then get the timings on arrival of packet 2 and 3
   // In between polls, read the data registers to reset the data-ready register
+  // Timings can be used to attempt synchronisation
   // Note that the times returned are accurate only to within the duration of the function (109us for accmag0, 120 for gyro1) - so the real times may be 120us less
-
 {
 
   byte value;
@@ -68,14 +56,14 @@ bool Gyro::checktiming()
   unsigned long int t = micros();
 
   while (true){
-
+    
+    // If this takes >1s, it means the sensors are broken: return false
     unsigned long int start_t = micros();
-    if (start_t - t >1000000){ //1s
+    if (start_t - t >1000000){
       return false;
     }
 
     value = checkstatus();
-
     switch (value){
       default: timings.looptimes[i] = micros() - start_t;
       i ++;
@@ -94,7 +82,7 @@ bool Gyro::checktiming()
       count ++;
       break;
 
-      case 255: count = 0;
+      case 255: count = 0; // too slow, data was overwritten: start again
       break;
     }
         _wire.beginTransmission((byte)FXAS21002C_ADDRESS);
@@ -108,10 +96,6 @@ bool Gyro::checktiming()
         uint8_t ylo = _wire.read();
         uint8_t zhi = _wire.read();
         uint8_t zlo = _wire.read();
-
-        // shouldnt need the end transmission
-        // _wire.endTransmission();
-
   }
 }
 
@@ -161,31 +145,16 @@ bool Gyro::begin(gyroRange_t rng)
 
 /**************************************************************************/
 /*!
-    @brief  Gets the most recent sensor event
-*/
+ Read the sensor
+ */
 /**************************************************************************/
-bool Gyro::getEvent(sensors_event_t* event)
+bool Gyro::getEvent()
 {
-  /* Clear the event */
-  memset(event, 0, sizeof(sensors_event_t));
-
   /* Clear the raw data placeholder */
   raw.x = 0;
   raw.y = 0;
   raw.z = 0;
-  
-  /* Check if there is new data available */
-  raw.status = checkstatus(); 
 
-  // If full sample is not available, exit without going further
-  if(raw.status <15){
-    return false;
-  }
-
-  /* Data available. Set the timestamp */
-  event->timestamp = micros();
-
-  // For some reason, we have to restart the transmission at the status register. Restarting at the first data register gives bad values //
   _wire.beginTransmission((byte)FXAS21002C_ADDRESS);
   _wire.write(GYRO_REGISTER_STATUS); 
   _wire.endTransmission();
@@ -207,14 +176,28 @@ bool Gyro::getEvent(sensors_event_t* event)
   return true;
 }
 
-/**************************************************************************/
-/*!
-    @brief  Gets the sensor_t data
+bool Gyro::getEvent(IMUmeas* imu)
+{
+  _wire.beginTransmission((byte)FXAS21002C_ADDRESS);
+  _wire.write(GYRO_REGISTER_STATUS); 
+  _wire.endTransmission();
+  _wire.requestFrom((byte)FXAS21002C_ADDRESS, (byte)7);
 
-    @param[out] sensor
-                A reference to the sensor_t instances where the
-                gyroscope sensor info should be written.
-*/
+  imu->gyro_status = _wire.read();
+  uint8_t xhi = _wire.read();
+  uint8_t xlo = _wire.read();
+  uint8_t yhi = _wire.read();
+  uint8_t ylo = _wire.read();
+  uint8_t zhi = _wire.read();
+  uint8_t zlo = _wire.read();
+
+  imu->gyro[0] = (int16_t)((xhi << 8) | xlo);
+  imu->gyro[1] = (int16_t)((yhi << 8) | ylo);
+  imu->gyro[2] = (int16_t)((zhi << 8) | zlo);
+
+  return true;
+}
+
 /**************************************************************************/
 void  Gyro::getSensor(sensor_t* sensor)
 {
@@ -231,4 +214,10 @@ void  Gyro::getSensor(sensor_t* sensor)
   sensor->max_value   = (float)this->_range * SENSORS_DPS_TO_RADS;
   sensor->min_value   = (this->_range * -1.0) * SENSORS_DPS_TO_RADS;
   sensor->resolution  = 0.0F; // TBD
+}
+
+/* To keep Adafruit_Sensor happy we need a single sensor interface */
+bool Gyro::getEvent(sensors_event_t* event)
+{
+    return getEvent();
 }

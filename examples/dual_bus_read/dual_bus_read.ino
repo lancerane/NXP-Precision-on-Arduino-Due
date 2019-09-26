@@ -1,5 +1,4 @@
 #include <Wire.h>
-#include <Adafruit_Sensor.h>
 #include <AccMag.h>
 #include <Gyro.h>
 
@@ -64,21 +63,16 @@ void displaySensorDetails(void)
 }
 
 void eraseDataRegisters(void)
+/* Read the sensors rapidly until all data registers are empty. For synchronisation purposes */
 {
   byte status_arr[4];
 
   while (true){
-
-
-  sensors_event_t event;
-  sensors_event_t aevent, mevent;
-  sensors_event_t event1;
-  sensors_event_t aevent1, mevent1;
   
-  gyro0.getEvent(&event);  
-  accelmag0.getEvent(&aevent, &mevent);
-  gyro1.getEvent(&event1);
-  accelmag1.getEvent(&aevent1, &mevent1);
+  gyro0.getEvent();  
+  accelmag0.getEvent();
+  gyro1.getEvent();
+  accelmag1.getEvent();
 
   status_arr[0] = gyro0.raw.status;
   status_arr[1] = gyro1.raw.status;
@@ -88,10 +82,8 @@ void eraseDataRegisters(void)
 
   if (status_arr[0] == 0 && status_arr[1] == 0 && status_arr[2] == 0 && status_arr[3] == 0){
       break;
-
     }
   }
-  
 }
 
 void setup(void)
@@ -122,11 +114,6 @@ void setup(void)
 
   accelmag1.checktiming();
   accelmag0.checktiming();
-
-//  for (int i=0; i<80; i++){
-//  Serial.println(accelmag0.timings.looptimes[i]);
-//  }
-//  
 
   // ASSERT THAT ACC/MAG TIMINGS ARE AS EXPECTED
   while (accelmag0.timings.first_t > accelmag1.timings.first_t){
@@ -160,7 +147,6 @@ void setup(void)
   if (offset0 > offset_tolerance || offset1 > offset_tolerance){
     REQUEST_EXTERNAL_RESET;
   }
-
    
   Serial.print("Acc1 init at: ");
   Serial.println(accelmag1.timings.first_t);
@@ -187,17 +173,11 @@ void setup(void)
 }
 
 void loop(void)
-{
-  sensors_event_t event;
-  sensors_event_t aevent, mevent;
-  sensors_event_t event1;
-  sensors_event_t aevent1, mevent1;
-  
-  gyro0.getEvent(&event);  
-  accelmag0.getEvent(&aevent, &mevent);
-  gyro1.getEvent(&event1);
-  accelmag1.getEvent(&aevent1, &mevent1);
-
+{  
+  gyro0.getEvent();  
+  accelmag0.getEvent();
+  gyro1.getEvent();
+  accelmag1.getEvent();
 
   /* Display raw data. NB These values require scaling */
   Serial.print("G ");

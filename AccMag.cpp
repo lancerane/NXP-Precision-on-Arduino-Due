@@ -1,8 +1,6 @@
- #include "Arduino.h"
-
+#include "Arduino.h"
 #include <Wire.h>
 #include <limits.h>
-
 #include "AccMag.h"
 
 #define ACCEL_MG_LSB_2G (0.000244F)
@@ -33,7 +31,6 @@ byte AccMag::read8(byte reg)
   _wire.requestFrom((byte)FXOS8700_ADDRESS, (byte)1);
   value = _wire.read();
 
-
   return value;
 }
 
@@ -54,10 +51,8 @@ byte AccMag::checkstatus()
 
 bool AccMag::checktiming()
 
-  // The sensor has a struct var containing two times corresponding to ODRs.
   // Get these by continuously polling the registers for fresh data. Throw away the first packet, then get the timings on arrival of packet 2 and 3
-  // If in between we get a 255 (data overwritten) then start again
-  // These values should be separated by 1/ODR
+  // Timings can be used to attempt synchronisation
   // In between polls, read the data registers to reset the data-ready register
   // Note that the times returned are accurate only to within the duration of the function (109us for accmag0, 120 for accmag1) - so the real times may be 120us less
 
@@ -69,45 +64,36 @@ bool AccMag::checktiming()
   unsigned long int t = micros();
 
   while (true){
-
     unsigned long int start_t = micros();
-
     // If this takes >1s, it means the sensors are broken: return false
     if (start_t - t >1000000){
       return false;
     }
-
     value = checkstatus();
-
     switch (value){
-
       default: timings.looptimes[i] = micros() - start_t;
       i ++;
       continue;
 
-      case 15: 
-      
+      case 15:     
       if (count==1){
         timings.looptimes[i] = micros() - start_t;
         i ++;
-
         timings.first_t = micros();
       }
       if (count==2){
         timings.second_t = micros();
         return true;
       }
-
       count ++;
       break;
 
-      case 255: count = 0;
+      case 255: count = 0; // too slow, data was overwritten: start again
       break;
-
     }
 
     _wire.beginTransmission((byte)FXOS8700_ADDRESS);
-        _wire.write(FXOS8700_REGISTER_STATUS | 0x80); 
+        _wire.write(FXOS8700_REGISTER_STATUS); 
         _wire.endTransmission();
         _wire.requestFrom((byte)FXOS8700_ADDRESS, (byte)13);
         uint8_t status = _wire.read();
@@ -171,8 +157,6 @@ bool AccMag::begin(fxos8700AccelRange_t rng)
   /* Jump to reg 0x33 after reading 0x06 (auto-increment from accelerometer to mag during burst read)*/
   write8(FXOS8700_REGISTER_MCTRL_REG2, 0x20);
 
-
-
   return true;
 }
 
@@ -181,12 +165,8 @@ bool AccMag::begin(fxos8700AccelRange_t rng)
  Read the sensor
 */
 /**************************************************************************/
-bool AccMag::getEvent(sensors_event_t* accelEvent, sensors_event_t* magEvent)
+bool AccMag::getEvent()
 {
-  /* Clear the event */
-  memset(accelEvent, 0, sizeof(sensors_event_t));
-  memset(magEvent, 0, sizeof(sensors_event_t));
-
   /* Clear the raw data placeholder */
   accel_raw.x = 0;
   accel_raw.y = 0;
@@ -195,18 +175,6 @@ bool AccMag::getEvent(sensors_event_t* accelEvent, sensors_event_t* magEvent)
   mag_raw.y = 0;
   mag_raw.z = 0;
 
-  /* Check if there is new data available */
-  // If full sample is not available, exit without going further
-  accel_raw.status = checkstatus();
-  if(accel_raw.status <15){
-    return false;
-  }
-
-  /* Data available. Set the timestamps */
-  accelEvent->timestamp = micros();
-
-  // For some reason, we have to restart the teansmission at the status register.
-  // Restarting at the first data register gives bad values //
   _wire.beginTransmission((byte)FXOS8700_ADDRESS);
   _wire.write(FXOS8700_REGISTER_STATUS); 
   _wire.endTransmission();
@@ -234,6 +202,38 @@ bool AccMag::getEvent(sensors_event_t* accelEvent, sensors_event_t* magEvent)
   mag_raw.x = (int16_t)((mxhi << 8) | mxlo);
   mag_raw.y = (int16_t)((myhi << 8) | mylo);
   mag_raw.z = (int16_t)((mzhi << 8) | mzlo);
+
+  return true;
+}
+
+bool AccMag::getEvent(IMUmeas* imu)
+{
+
+  _wire.beginTransmission((byte)FXOS8700_ADDRESS);
+  _wire.write(FXOS8700_REGISTER_STATUS); 
+  _wire.endTransmission();
+  _wire.requestFrom((byte)FXOS8700_ADDRESS, (byte)13);
+
+  imu->acc_mag_status = _wire.read();
+  uint8_t axhi = _wire.read();
+  uint8_t axlo = _wire.read();
+  uint8_t ayhi = _wire.read();
+  uint8_t aylo = _wire.read();
+  uint8_t azhi = _wire.read();
+  uint8_t azlo = _wire.read();
+  uint8_t mxhi = _wire.read();
+  uint8_t mxlo = _wire.read();
+  uint8_t myhi = _wire.read();
+  uint8_t mylo = _wire.read();
+  uint8_t mzhi = _wire.read();
+  uint8_t mzlo = _wire.read();
+
+  imu->acc[0] = (int16_t)((axhi << 8) | axlo) >> 2;
+  imu->acc[1] = (int16_t)((ayhi << 8) | aylo) >> 2;
+  imu->acc[2] = (int16_t)((azhi << 8) | azlo) >> 2;
+  imu->mag[0] = (int16_t)((mxhi << 8) | mxlo);
+  imu->mag[1] = (int16_t)((myhi << 8) | mylo);
+  imu->mag[2] = (int16_t)((mzhi << 8) | mzlo);
 
   return true;
 }
@@ -289,9 +289,7 @@ void  AccMag::getSensor(sensor_t* accelSensor, sensor_t* magSensor)
 /* When only one sensor is requested, return accel data */
 bool AccMag::getEvent(sensors_event_t* accelEvent)
 {
-    sensors_event_t mag;
-
-    return getEvent(accelEvent, &mag);
+    return getEvent();
 }
 
 /* To keep Adafruit_Sensor happy we need a single sensor interface */

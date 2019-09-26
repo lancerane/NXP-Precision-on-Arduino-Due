@@ -2,9 +2,9 @@
 #define __FXOS8700_H__
 
 #include "Arduino.h"
-
 #include <Adafruit_Sensor.h>
 #include <Wire.h>
+#include "SensorTypes.h"
 
 /*=========================================================================
     I2C ADDRESS/BITS AND SETTINGS
@@ -66,40 +66,37 @@
       int16_t z;
       uint8_t status;
     } fxos8700RawData_t;
-/*=========================================================================*/
 
 typedef struct sensorTimesAccMag 
     { 
         unsigned long int first_t, second_t, looptimes[200]={0}; 
     } sensorTimes_accmag;
 
+/*=========================================================================*/
+
+
 class AccMag : public Adafruit_Sensor
 {
   public:
     TwoWire &_wire;
     AccMag(int32_t accelSensorID = -1, int32_t magSensorID = -1, int bus=0) : _wire(bus == 0 ? Wire : Wire1){
-
     _accelSensorID = accelSensorID;
-    _magSensorID = magSensorID;
-    
-
+    _magSensorID = magSensorID;    
     }
     
-    
-
-    bool begin           ( fxos8700AccelRange_t rng = ACCEL_RANGE_2G );
-    bool getEvent        ( sensors_event_t* accel );
-    void getSensor       ( sensor_t* accel );
-    bool getEvent        ( sensors_event_t* accel, sensors_event_t* mag );
-    void getSensor       ( sensor_t* accel, sensor_t* mag );
-    byte checkstatus     ( );
+    bool begin(fxos8700AccelRange_t rng = ACCEL_RANGE_2G);
+    bool getEvent(sensors_event_t* accel);
+    void getSensor(sensor_t* accel);
+    bool getEvent();
+    bool getEvent(IMUmeas* imu);
+    void getSensor(sensor_t* accel, sensor_t* mag);
+    byte checkstatus();
     bool checktiming ();
 
     fxos8700RawData_t accel_raw; /* Raw values from last sensor read */
     fxos8700RawData_t mag_raw;   /* Raw values from last sensor read */
     sensorTimes_accmag timings;
     
-
   private:
     void        write8  ( byte reg, byte value );
     byte        read8   ( byte reg );
@@ -107,7 +104,6 @@ class AccMag : public Adafruit_Sensor
     fxos8700AccelRange_t _range;
     int32_t              _accelSensorID;
     int32_t              _magSensorID;
-    
 };
 
 #endif

@@ -1,11 +1,10 @@
 #ifndef __FXAS21002C_H__
 #define __FXAS21002C_H__
 
-
 #include "Arduino.h"
-
 #include <Adafruit_Sensor.h>
 #include <Wire.h>
+#include "SensorTypes.h"
 
 /*=========================================================================
     I2C ADDRESS/BITS AND SETTINGS
@@ -74,13 +73,13 @@
       int16_t z;    /**< Raw int16_t value for the z axis */
       uint8_t status;
     } gyroRawData_t;
-/*=========================================================================*/
 
     typedef struct sensorTimes_s 
     { 
-        unsigned long int first_t, second_t, looptimes[200]={0};  
+      unsigned long int first_t, second_t, looptimes[200]={0};  
     } sensorTimes_t;
 
+/*=========================================================================*/
 
 // Constructor takes an int defining which bus to use, so for convenience we can launch multiple sensors on different buses from the .INO
 class Gyro : public Adafruit_Sensor
@@ -88,26 +87,26 @@ class Gyro : public Adafruit_Sensor
   public:
     TwoWire &_wire;
     Gyro(int32_t sensorID = -1, int bus=0) : _wire(bus == 0 ? Wire : Wire1) {
-      _sensorID = sensorID;
+    _sensorID = sensorID;
     }
 
-    bool begin           ( gyroRange_t rng = GYRO_RANGE_250DPS );
-    bool getEvent        ( sensors_event_t* event);
-    void getSensor       ( sensor_t* sensor);
-
-    byte checkstatus     ( );
-    bool checktiming ();
+    bool begin(gyroRange_t rng = GYRO_RANGE_250DPS);
+    bool getEvent(sensors_event_t* event);
+    bool getEvent();
+    bool getEvent(IMUmeas* imu);
+    void getSensor(sensor_t* sensor);
+    byte checkstatus();
+    bool checktiming();
     
-
     /*! Raw gyroscope values from last sensor read */
     gyroRawData_t raw;
     sensorTimes_t timings;
 
   private:
-    void        write8  ( byte reg, byte value);
-    byte        read8   ( byte reg);
+    void write8(byte reg, byte value);
+    byte read8(byte reg);
     gyroRange_t _range;
-    int32_t     _sensorID;
+    int32_t _sensorID;
 };
 
 #endif
