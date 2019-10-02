@@ -89,6 +89,8 @@ class AccMag : public Adafruit_Sensor
     void getSensor(sensor_t* accel);
     bool getEvent();
     bool getEvent(IMUmeas* imu);
+    bool getEvent(float &float1, float &float2, float &float3);
+    bool getEvent(float &float1, float &float2, float &float3, float &float4, float &float5, float &float6);
     void getSensor(sensor_t* accel, sensor_t* mag);
     byte checkstatus();
     bool checktiming ();
@@ -98,12 +100,12 @@ class AccMag : public Adafruit_Sensor
     sensorTimes_accmag timings;
     
   private:
-    void        write8  ( byte reg, byte value );
-    byte        read8   ( byte reg );
+    void write8(byte reg, byte value);
+    byte read8(byte reg);
 
     fxos8700AccelRange_t _range;
-    int32_t              _accelSensorID;
-    int32_t              _magSensorID;
+    int32_t _accelSensorID;
+    int32_t _magSensorID;
 };
 
 #endif

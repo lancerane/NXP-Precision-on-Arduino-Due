@@ -94,6 +94,7 @@ class Gyro : public Adafruit_Sensor
     bool getEvent(sensors_event_t* event);
     bool getEvent();
     bool getEvent(IMUmeas* imu);
+    bool getEvent(float &float1, float &float2, float &float3);
     void getSensor(sensor_t* sensor);
     byte checkstatus();
     bool checktiming();

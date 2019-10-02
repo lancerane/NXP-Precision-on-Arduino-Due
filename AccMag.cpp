@@ -13,18 +13,18 @@
  ***************************************************************************/
 
 void AccMag::write8(byte reg, byte value)
+
 {
   _wire.beginTransmission(FXOS8700_ADDRESS);
   _wire.write((uint8_t)reg);
   _wire.write((uint8_t)value);
-
   _wire.endTransmission();
 }
 
 byte AccMag::read8(byte reg)
+
 {
   byte value;
-
   _wire.beginTransmission((byte)FXOS8700_ADDRESS);
   _wire.write(reg);
   _wire.endTransmission();
@@ -55,7 +55,7 @@ bool AccMag::checktiming()
   // Timings can be used to attempt synchronisation
   // In between polls, read the data registers to reset the data-ready register
   // Note that the times returned are accurate only to within the duration of the function (109us for accmag0, 120 for accmag1) - so the real times may be 120us less
-
+  // Looptimes allow checking that iteration times are consisent (sometimes they seem not to be!)
 {
   byte value;
   int count = 0;
@@ -63,52 +63,38 @@ bool AccMag::checktiming()
 
   unsigned long int t = micros();
 
-  while (true){
-    unsigned long int start_t = micros();
+  while (true) {
+
     // If this takes >1s, it means the sensors are broken: return false
-    if (start_t - t >1000000){
-      return false;
+    unsigned long int start_t = micros();
+    
+      if (start_t - t >1000000){
+          return false;}
+
+      value = checkstatus();
+      switch (value) {
+          default: timings.looptimes[i] = micros() - start_t;
+          i ++;
+          continue;
+          case 15:     
+              if (count==1){
+                  timings.looptimes[i] = micros() - start_t;
+                  i ++;
+                  timings.first_t = micros();}
+              if (count==2){
+                  timings.second_t = micros();
+                  return true;}
+              count ++;
+              break;
+          case 255: count = 0; // too slow, data was overwritten: start again
+              break;
     }
-    value = checkstatus();
-    switch (value){
-      default: timings.looptimes[i] = micros() - start_t;
-      i ++;
-      continue;
-
-      case 15:     
-      if (count==1){
-        timings.looptimes[i] = micros() - start_t;
-        i ++;
-        timings.first_t = micros();
-      }
-      if (count==2){
-        timings.second_t = micros();
-        return true;
-      }
-      count ++;
-      break;
-
-      case 255: count = 0; // too slow, data was overwritten: start again
-      break;
-    }
-
-    _wire.beginTransmission((byte)FXOS8700_ADDRESS);
-        _wire.write(FXOS8700_REGISTER_STATUS); 
-        _wire.endTransmission();
-        _wire.requestFrom((byte)FXOS8700_ADDRESS, (byte)13);
-        uint8_t status = _wire.read();
-        uint8_t axhi = _wire.read();
-        uint8_t axlo = _wire.read();
-        uint8_t ayhi = _wire.read();
-        uint8_t aylo = _wire.read();
-        uint8_t azhi = _wire.read();
-        uint8_t azlo = _wire.read();
-        uint8_t mxhi = _wire.read();
-        uint8_t mxlo = _wire.read();
-        uint8_t myhi = _wire.read();
-        uint8_t mylo = _wire.read();
-        uint8_t mzhi = _wire.read();
-        uint8_t mzlo = _wire.read();
+      _wire.beginTransmission((byte)FXOS8700_ADDRESS);
+      _wire.write(FXOS8700_REGISTER_STATUS); 
+      _wire.endTransmission();
+      _wire.requestFrom((byte)FXOS8700_ADDRESS, (byte)13);
+      for (int i=0; i<13; i++) {
+          _wire.read();}
   }
 }
 
@@ -126,9 +112,6 @@ bool AccMag::begin(fxos8700AccelRange_t rng)
   mag_raw.z = 0;
 
   /* Addressing is broken - can only read starting at 0x00. So omit ID check */
-  // int16_t id = read8(FXOS8700_REGISTER_WHO_AM_I);
-  // if (id != FXOS8700_ID) //should be 199
-  // {return false;}
 
   /* Set to standby mode (required to make changes to this register) */
   write8(FXOS8700_REGISTER_CTRL_REG1, 0);
@@ -206,9 +189,9 @@ bool AccMag::getEvent()
   return true;
 }
 
+// Overload getEvent to accept different data structures
 bool AccMag::getEvent(IMUmeas* imu)
 {
-
   _wire.beginTransmission((byte)FXOS8700_ADDRESS);
   _wire.write(FXOS8700_REGISTER_STATUS); 
   _wire.endTransmission();
@@ -234,6 +217,61 @@ bool AccMag::getEvent(IMUmeas* imu)
   imu->mag[0] = (int16_t)((mxhi << 8) | mxlo);
   imu->mag[1] = (int16_t)((myhi << 8) | mylo);
   imu->mag[2] = (int16_t)((mzhi << 8) | mzlo);
+
+  return true;
+}
+
+bool AccMag::getEvent(float &float1, float &float2, float &float3)
+{
+  _wire.beginTransmission((byte)FXOS8700_ADDRESS);
+  _wire.write(FXOS8700_REGISTER_STATUS); 
+  _wire.endTransmission();
+  _wire.requestFrom((byte)FXOS8700_ADDRESS, (byte)7);
+
+  _wire.read();
+  uint8_t axhi = _wire.read();
+  uint8_t axlo = _wire.read();
+  uint8_t ayhi = _wire.read();
+  uint8_t aylo = _wire.read();
+  uint8_t azhi = _wire.read();
+  uint8_t azlo = _wire.read();
+
+  // Could fuse scaling/ normalisation/ quantisation ops here
+
+  float1 = (int16_t)((axhi << 8) | axlo) >> 2;
+  float2 = (int16_t)((ayhi << 8) | aylo) >> 2;
+  float3 = (int16_t)((azhi << 8) | azlo) >> 2;
+
+  return true;
+}
+
+bool AccMag::getEvent(float &float1, float &float2, float &float3, float &float4, float &float5, float &float6)
+{
+  _wire.beginTransmission((byte)FXOS8700_ADDRESS);
+  _wire.write(FXOS8700_REGISTER_STATUS); 
+  _wire.endTransmission();
+  _wire.requestFrom((byte)FXOS8700_ADDRESS, (byte)13);
+
+  _wire.read();
+  uint8_t axhi = _wire.read();
+  uint8_t axlo = _wire.read();
+  uint8_t ayhi = _wire.read();
+  uint8_t aylo = _wire.read();
+  uint8_t azhi = _wire.read();
+  uint8_t azlo = _wire.read();
+  uint8_t mxhi = _wire.read();
+  uint8_t mxlo = _wire.read();
+  uint8_t myhi = _wire.read();
+  uint8_t mylo = _wire.read();
+  uint8_t mzhi = _wire.read();
+  uint8_t mzlo = _wire.read();
+
+  float1 = (int16_t)((axhi << 8) | axlo) >> 2;
+  float2 = (int16_t)((ayhi << 8) | aylo) >> 2;
+  float3 = (int16_t)((azhi << 8) | azlo) >> 2;
+  float4 = (int16_t)((mxhi << 8) | mxlo);
+  float5 = (int16_t)((myhi << 8) | mylo);
+  float6 = (int16_t)((mzhi << 8) | mzlo);
 
   return true;
 }
