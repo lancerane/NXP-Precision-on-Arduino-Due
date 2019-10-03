@@ -7,18 +7,17 @@
  PRIVATE FUNCTIONS
  ***************************************************************************/
 
-void Gyro::write8(byte reg, byte value)
-{
+void Gyro::write8(byte reg, byte value) {
+
   _wire.beginTransmission(FXAS21002C_ADDRESS);
   _wire.write((uint8_t)reg);
   _wire.write((uint8_t)value);
   _wire.endTransmission();
 }
 
-byte Gyro::read8(byte reg)
-{
-  uint8_t value;
+byte Gyro::read8(byte reg) {
 
+  uint8_t value;
   _wire.beginTransmission((byte)FXAS21002C_ADDRESS);
   _wire.write(reg);
   _wire.endTransmission();
@@ -31,26 +30,25 @@ byte Gyro::read8(byte reg)
 /***************************************************************************
  PUBLIC FUNCTIONS
  ***************************************************************************/
-byte Gyro::checkstatus()
+byte Gyro::checkstatus() {
 
-// 0 = no data available
-// >0, <15 = part data ready
-// 15 = data ready
-// >15 = overwrite occurrred
+  /* 0 = no data available
+  >0, <15 = part data ready
+  15 = data ready
+  >15 = overwrite occurrred */
 
-{
   return read8(GYRO_REGISTER_STATUS);
 }
 
-bool Gyro::checktiming()
+bool Gyro::checktiming() {
 
-  // Get these by continuously polling the registers for fresh data. Throw away the first packet, then get the timings on arrival of packet 2 and 3
-  // In between polls, read the data registers to reset the data-ready register
-  // Timings can be used to attempt synchronisation
-  // Note that the times returned are accurate only to within the duration of the function (109us for accmag0, 120 for gyro1) - so the real times may be 120us less
-  // Looptimes allow checking that iteration times are consisent (sometimes they seem not to be!)
+  /*Get these by continuously polling the registers for fresh data. Throw away the first packet, then get 
+  the timings on arrival of packet 2 and 3. In between polls, read the data registers to reset the 
+  data-ready register. Timings can be used to attempt synchronisation. Note that the times returned are 
+  accurate only to within the duration of the function (109us for accmag0, 120 for gyro1) - so the real 
+  times may be 120us less. Looptimes allow checking that iteration times are consisent (sometimes they 
+  seem not to be!) */
 
-{
   byte value;
   int count = 0;
   int i = 0;
@@ -61,37 +59,40 @@ bool Gyro::checktiming()
     // If this takes >1s, it means the sensors are broken: return false
     unsigned long int start_t = micros();
     if (start_t - t >1000000) {
-        return false;}
+      return false;
+    }
 
     value = checkstatus();
     switch (value) {
-        default: timings.looptimes[i] = micros() - start_t;
+      default: timings.looptimes[i] = micros() - start_t;
         i ++;
         continue;
-        case 15:    
-            if (count==1) {
-                timings.looptimes[i] = micros() - start_t;
-                i ++;
-                timings.first_t = micros();}
-            if (count==2){
-                timings.second_t = micros();
-                return true;}
-            count ++;
-            break;
-        case 255: count = 0; // too slow, data was overwritten: start again
-            break;
+      case 15:    
+        if (count==1) {
+          timings.looptimes[i] = micros() - start_t;
+          i ++;
+          timings.first_t = micros();
+        }
+        if (count==2) {
+          timings.second_t = micros();
+          return true;
+        }
+        count ++;
+        break;
+      case 255: count = 0; // too slow, data was overwritten: start again
+        break;
     }
-      _wire.beginTransmission((byte)FXAS21002C_ADDRESS);
-      _wire.write(GYRO_REGISTER_STATUS | 0x80); 
-      _wire.endTransmission();
-      _wire.requestFrom((byte)FXAS21002C_ADDRESS, (byte)7);
-      for (int i=0; i<7; i++) {
-          _wire.read();}
+    _wire.beginTransmission((byte)FXAS21002C_ADDRESS);
+    _wire.write(GYRO_REGISTER_STATUS | 0x80); 
+    _wire.endTransmission();
+    _wire.requestFrom((byte)FXAS21002C_ADDRESS, (byte)7);
+    for (int i=0; i<7; i++) {
+      _wire.read();
+    }
   }
 }
 
-bool Gyro::begin(gyroRange_t rng)
-{
+bool Gyro::begin(gyroRange_t rng) {
   /* Set the range the an appropriate value */
   _range = rng;
 
@@ -105,13 +106,12 @@ bool Gyro::begin(gyroRange_t rng)
   // Sensor config. See datasheet for options // 
   uint8_t ctrlReg0 = 0x00;
 
-  switch(_range)
-  {
+  switch(_range) {
     case GYRO_RANGE_250DPS:
       ctrlReg0 = 0x03;
       break;
     case GYRO_RANGE_500DPS:
-     ctrlReg0 = 0x02;
+      ctrlReg0 = 0x02;
       break;
     case GYRO_RANGE_1000DPS:
       ctrlReg0 = 0x01;
@@ -131,13 +131,11 @@ bool Gyro::begin(gyroRange_t rng)
   return true;
 }
 
-/**************************************************************************/
-/*!
+/************************************************************************
  Read the sensor
- */
-/**************************************************************************/
-bool Gyro::getEvent()
-{
+**************************************************************************/
+bool Gyro::getEvent() {
+
   /* Clear the raw data placeholder */
   raw.x = 0;
   raw.y = 0;
@@ -165,8 +163,8 @@ bool Gyro::getEvent()
 }
 
 // Overload getEvent to accept different data structures
-bool Gyro::getEvent(IMUmeas* imu)
-{
+bool Gyro::getEvent(IMUmeas* imu) {
+
   _wire.beginTransmission((byte)FXAS21002C_ADDRESS);
   _wire.write(GYRO_REGISTER_STATUS); 
   _wire.endTransmission();
@@ -187,8 +185,8 @@ bool Gyro::getEvent(IMUmeas* imu)
   return true;
 }
 
-bool Gyro::getEvent(float &float1, float &float2, float &float3)
-{
+bool Gyro::getEvent(float &float1, float &float2, float &float3) {
+
   _wire.beginTransmission((byte)FXAS21002C_ADDRESS);
   _wire.write(GYRO_REGISTER_STATUS); 
   _wire.endTransmission();
@@ -212,8 +210,8 @@ bool Gyro::getEvent(float &float1, float &float2, float &float3)
 }
 
 /**************************************************************************/
-void  Gyro::getSensor(sensor_t* sensor)
-{
+void  Gyro::getSensor(sensor_t* sensor) {
+
   /* Clear the sensor_t object */
   memset(sensor, 0, sizeof(sensor_t));
 
@@ -230,7 +228,6 @@ void  Gyro::getSensor(sensor_t* sensor)
 }
 
 /* To keep Adafruit_Sensor happy we need a single sensor interface */
-bool Gyro::getEvent(sensors_event_t* event)
-{
+bool Gyro::getEvent(sensors_event_t* event) {
     return getEvent();
 }

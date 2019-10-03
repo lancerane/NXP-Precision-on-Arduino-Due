@@ -12,18 +12,16 @@
  PRIVATE FUNCTIONS
  ***************************************************************************/
 
-void AccMag::write8(byte reg, byte value)
+void AccMag::write8(byte reg, byte value) {
 
-{
   _wire.beginTransmission(FXOS8700_ADDRESS);
   _wire.write((uint8_t)reg);
   _wire.write((uint8_t)value);
   _wire.endTransmission();
 }
 
-byte AccMag::read8(byte reg)
+byte AccMag::read8(byte reg) {
 
-{
   byte value;
   _wire.beginTransmission((byte)FXOS8700_ADDRESS);
   _wire.write(reg);
@@ -38,25 +36,24 @@ byte AccMag::read8(byte reg)
  PUBLIC FUNCTIONS
  ***************************************************************************/
 
-byte AccMag::checkstatus()
+byte AccMag::checkstatus() {
 
 // check the data-ready status
 // 0 = no data available
 // 15 = data ready
 // 255 = overwrite occurrred
 
-{
   return read8(FXOS8700_REGISTER_STATUS);
 }
 
-bool AccMag::checktiming()
+bool AccMag::checktiming() {
 
   // Get these by continuously polling the registers for fresh data. Throw away the first packet, then get the timings on arrival of packet 2 and 3
   // Timings can be used to attempt synchronisation
   // In between polls, read the data registers to reset the data-ready register
   // Note that the times returned are accurate only to within the duration of the function (109us for accmag0, 120 for accmag1) - so the real times may be 120us less
   // Looptimes allow checking that iteration times are consisent (sometimes they seem not to be!)
-{
+
   byte value;
   int count = 0;
   int i = 0;
@@ -68,38 +65,41 @@ bool AccMag::checktiming()
     // If this takes >1s, it means the sensors are broken: return false
     unsigned long int start_t = micros();
     
-      if (start_t - t >1000000){
-          return false;}
-
-      value = checkstatus();
-      switch (value) {
-          default: timings.looptimes[i] = micros() - start_t;
-          i ++;
-          continue;
-          case 15:     
-              if (count==1){
-                  timings.looptimes[i] = micros() - start_t;
-                  i ++;
-                  timings.first_t = micros();}
-              if (count==2){
-                  timings.second_t = micros();
-                  return true;}
-              count ++;
-              break;
-          case 255: count = 0; // too slow, data was overwritten: start again
-              break;
+    if (start_t - t >1000000) {
+      return false;
     }
-      _wire.beginTransmission((byte)FXOS8700_ADDRESS);
-      _wire.write(FXOS8700_REGISTER_STATUS); 
-      _wire.endTransmission();
-      _wire.requestFrom((byte)FXOS8700_ADDRESS, (byte)13);
-      for (int i=0; i<13; i++) {
-          _wire.read();}
+
+    value = checkstatus();
+    switch (value) {
+      default: timings.looptimes[i] = micros() - start_t;
+        i ++;
+        continue;
+      case 15:     
+        if (count==1) {
+          timings.looptimes[i] = micros() - start_t;
+          i ++;
+          timings.first_t = micros();
+        }
+        if (count==2) {
+          timings.second_t = micros();
+          return true;
+        }
+        count ++;
+        break;
+        case 255: count = 0; // too slow, data was overwritten: start again
+          break;
+    }
+    _wire.beginTransmission((byte)FXOS8700_ADDRESS);
+    _wire.write(FXOS8700_REGISTER_STATUS); 
+    _wire.endTransmission();
+    _wire.requestFrom((byte)FXOS8700_ADDRESS, (byte)13);
+    for (int i=0; i<13; i++) {
+      _wire.read();
+    }
   }
 }
 
-bool AccMag::begin(fxos8700AccelRange_t rng)
-{
+bool AccMag::begin(fxos8700AccelRange_t rng) {
   /* Set the range the an appropriate value */
   _range = rng;
 
@@ -118,14 +118,14 @@ bool AccMag::begin(fxos8700AccelRange_t rng)
 
   /* Configure the accelerometer */
   switch (_range) {
-      case (ACCEL_RANGE_2G):
-        write8(FXOS8700_REGISTER_XYZ_DATA_CFG, 0x00);
+    case (ACCEL_RANGE_2G):
+      write8(FXOS8700_REGISTER_XYZ_DATA_CFG, 0x00);
       break;
-      case (ACCEL_RANGE_4G):
-        write8(FXOS8700_REGISTER_XYZ_DATA_CFG, 0x01);
+    case (ACCEL_RANGE_4G):
+      write8(FXOS8700_REGISTER_XYZ_DATA_CFG, 0x01);
       break;
-      case (ACCEL_RANGE_8G):
-        write8(FXOS8700_REGISTER_XYZ_DATA_CFG, 0x02);
+    case (ACCEL_RANGE_8G):
+      write8(FXOS8700_REGISTER_XYZ_DATA_CFG, 0x02);
       break;
   }
 
@@ -148,8 +148,8 @@ bool AccMag::begin(fxos8700AccelRange_t rng)
  Read the sensor
 */
 /**************************************************************************/
-bool AccMag::getEvent()
-{
+bool AccMag::getEvent() {
+
   /* Clear the raw data placeholder */
   accel_raw.x = 0;
   accel_raw.y = 0;
@@ -190,8 +190,8 @@ bool AccMag::getEvent()
 }
 
 // Overload getEvent to accept different data structures
-bool AccMag::getEvent(IMUmeas* imu)
-{
+bool AccMag::getEvent(IMUmeas* imu) {
+
   _wire.beginTransmission((byte)FXOS8700_ADDRESS);
   _wire.write(FXOS8700_REGISTER_STATUS); 
   _wire.endTransmission();
@@ -221,8 +221,7 @@ bool AccMag::getEvent(IMUmeas* imu)
   return true;
 }
 
-bool AccMag::getEvent(float &float1, float &float2, float &float3)
-{
+bool AccMag::getEvent(float &float1, float &float2, float &float3) {
   _wire.beginTransmission((byte)FXOS8700_ADDRESS);
   _wire.write(FXOS8700_REGISTER_STATUS); 
   _wire.endTransmission();
@@ -245,8 +244,8 @@ bool AccMag::getEvent(float &float1, float &float2, float &float3)
   return true;
 }
 
-bool AccMag::getEvent(float &float1, float &float2, float &float3, float &float4, float &float5, float &float6)
-{
+bool AccMag::getEvent(float &float1, float &float2, float &float3, float &float4, float &float5, float &float6) {
+
   _wire.beginTransmission((byte)FXOS8700_ADDRESS);
   _wire.write(FXOS8700_REGISTER_STATUS); 
   _wire.endTransmission();
@@ -281,8 +280,7 @@ bool AccMag::getEvent(float &float1, float &float2, float &float3, float &float4
     @brief  Gets the sensor_t data
 */
 /**************************************************************************/
-void  AccMag::getSensor(sensor_t* accelSensor, sensor_t* magSensor)
-{
+void  AccMag::getSensor(sensor_t* accelSensor, sensor_t* magSensor) {
   /* Clear the sensor_t object */
   memset(accelSensor, 0, sizeof(sensor_t));
   memset(magSensor, 0, sizeof(sensor_t));
@@ -325,16 +323,13 @@ void  AccMag::getSensor(sensor_t* accelSensor, sensor_t* magSensor)
 
 /* To keep Adafruit_Sensor happy we need a single sensor interface */
 /* When only one sensor is requested, return accel data */
-bool AccMag::getEvent(sensors_event_t* accelEvent)
-{
+bool AccMag::getEvent(sensors_event_t* accelEvent) {
     return getEvent();
 }
 
 /* To keep Adafruit_Sensor happy we need a single sensor interface */
 /* When only one sensor is requested, return accel data */
-void  AccMag::getSensor(sensor_t* accelSensor)
-{
+void  AccMag::getSensor(sensor_t* accelSensor) {
     sensor_t mag;
-
     return getSensor(accelSensor, &mag);
 }

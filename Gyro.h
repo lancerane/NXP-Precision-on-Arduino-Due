@@ -29,8 +29,7 @@
     /*!
         Raw register addresses used to communicate with the sensor.
     */
-    typedef enum
-    {
+    typedef enum {
       GYRO_REGISTER_STATUS              = 0x00, /**< 0x00 */
       GYRO_REGISTER_OUT_X_MSB           = 0x01, /**< 0x01 */
       GYRO_REGISTER_OUT_X_LSB           = 0x02, /**< 0x02 */
@@ -51,8 +50,7 @@
     /*!
         Enum to define valid gyroscope range values
     */
-    typedef enum
-    {
+    typedef enum {
       GYRO_RANGE_250DPS  = 250,     /**< 250dps */
       GYRO_RANGE_500DPS  = 500,     /**< 500dps */
       GYRO_RANGE_1000DPS = 1000,    /**< 1000dps */
@@ -66,24 +64,22 @@
     /*!
         Struct to store a single raw (integer-based) gyroscope vector
     */
-    typedef struct gyroRawData_s
-    {
+    typedef struct gyroRawData_s {
       int16_t x;    /**< Raw int16_t value for the x axis */
       int16_t y;    /**< Raw int16_t value for the y axis */
       int16_t z;    /**< Raw int16_t value for the z axis */
       uint8_t status;
     } gyroRawData_t;
 
-    typedef struct sensorTimes_s 
-    { 
+    typedef struct sensorTimes_s { 
       unsigned long int first_t, second_t, looptimes[200]={0};  
     } sensorTimes_t;
 
 /*=========================================================================*/
 
 // Constructor takes an int defining which bus to use, so for convenience we can launch multiple sensors on different buses from the .INO
-class Gyro : public Adafruit_Sensor
-{
+class Gyro : public Adafruit_Sensor {
+  
   public:
     TwoWire &_wire;
     Gyro(int32_t sensorID = -1, int bus=0) : _wire(bus == 0 ? Wire : Wire1) {

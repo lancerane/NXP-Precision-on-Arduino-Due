@@ -16,8 +16,7 @@
 /*=========================================================================
     REGISTERS
     -----------------------------------------------------------------------*/
-    typedef enum
-    {                                             // DEFAULT    TYPE
+    typedef enum {                                             // DEFAULT    TYPE
       FXOS8700_REGISTER_STATUS          = 0x00,
       FXOS8700_REGISTER_OUT_X_MSB       = 0x01,
       FXOS8700_REGISTER_OUT_X_LSB       = 0x02,
@@ -48,8 +47,7 @@
 /*=========================================================================
     OPTIONAL SPEED SETTINGS
     -----------------------------------------------------------------------*/
-    typedef enum
-    {
+    typedef enum {
       ACCEL_RANGE_2G                    = 0x00,
       ACCEL_RANGE_4G                    = 0x01,
       ACCEL_RANGE_8G                    = 0x02
@@ -59,27 +57,25 @@
 /*=========================================================================
     RAW GYROSCOPE DATA TYPE
     -----------------------------------------------------------------------*/
-    typedef struct fxos8700RawData_s
-    {
+    typedef struct fxos8700RawData_s {
       int16_t x;
       int16_t y;
       int16_t z;
       uint8_t status;
     } fxos8700RawData_t;
 
-typedef struct sensorTimesAccMag 
-    { 
-        unsigned long int first_t, second_t, looptimes[200]={0}; 
+    typedef struct sensorTimesAccMag { 
+      unsigned long int first_t, second_t, looptimes[200]={0}; 
     } sensorTimes_accmag;
 
 /*=========================================================================*/
 
 
-class AccMag : public Adafruit_Sensor
-{
+class AccMag : public Adafruit_Sensor {
+
   public:
     TwoWire &_wire;
-    AccMag(int32_t accelSensorID = -1, int32_t magSensorID = -1, int bus=0) : _wire(bus == 0 ? Wire : Wire1){
+    AccMag(int32_t accelSensorID = -1, int32_t magSensorID = -1, int bus=0) : _wire(bus == 0 ? Wire : Wire1) {
     _accelSensorID = accelSensorID;
     _magSensorID = magSensorID;    
     }
@@ -93,7 +89,7 @@ class AccMag : public Adafruit_Sensor
     bool getEvent(float &float1, float &float2, float &float3, float &float4, float &float5, float &float6);
     void getSensor(sensor_t* accel, sensor_t* mag);
     byte checkstatus();
-    bool checktiming ();
+    bool checktiming();
 
     fxos8700RawData_t accel_raw; /* Raw values from last sensor read */
     fxos8700RawData_t mag_raw;   /* Raw values from last sensor read */
