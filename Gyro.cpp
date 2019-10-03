@@ -185,7 +185,7 @@ bool Gyro::getEvent(IMUmeas* imu) {
   return true;
 }
 
-bool Gyro::getEvent(float &float1, float &float2, float &float3) {
+bool Gyro::getEvent(float* gyr_x, float* gyr_y, float* gyr_z) {
 
   _wire.beginTransmission((byte)FXAS21002C_ADDRESS);
   _wire.write(GYRO_REGISTER_STATUS); 
@@ -202,9 +202,9 @@ bool Gyro::getEvent(float &float1, float &float2, float &float3) {
 
   // Could fuse scaling/ normalisation/ quantisation ops here
 
-  float1 = (int16_t)((xhi << 8) | xlo);
-  float2 = (int16_t)((yhi << 8) | ylo);
-  float3 = (int16_t)((zhi << 8) | zlo);
+  *gyr_x = (int16_t)((xhi << 8) | xlo);
+  *gyr_y = (int16_t)((yhi << 8) | ylo);
+  *gyr_z = (int16_t)((zhi << 8) | zlo);
 
   return true;
 }

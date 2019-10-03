@@ -79,7 +79,7 @@
 
 // Constructor takes an int defining which bus to use, so for convenience we can launch multiple sensors on different buses from the .INO
 class Gyro : public Adafruit_Sensor {
-  
+
   public:
     TwoWire &_wire;
     Gyro(int32_t sensorID = -1, int bus=0) : _wire(bus == 0 ? Wire : Wire1) {
@@ -90,7 +90,7 @@ class Gyro : public Adafruit_Sensor {
     bool getEvent(sensors_event_t* event);
     bool getEvent();
     bool getEvent(IMUmeas* imu);
-    bool getEvent(float &float1, float &float2, float &float3);
+    bool getEvent(float* gyr_x, float* gyr_y, float* gyr_z);
     void getSensor(sensor_t* sensor);
     byte checkstatus();
     bool checktiming();

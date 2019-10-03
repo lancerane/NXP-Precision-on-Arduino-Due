@@ -85,8 +85,9 @@ class AccMag : public Adafruit_Sensor {
     void getSensor(sensor_t* accel);
     bool getEvent();
     bool getEvent(IMUmeas* imu);
-    bool getEvent(float &float1, float &float2, float &float3);
-    bool getEvent(float &float1, float &float2, float &float3, float &float4, float &float5, float &float6);
+    bool getEvent(float* acc_x, float* acc_y, float* acc_z);
+    bool getEvent(float* acc_x, float* acc_y, float* acc_z, 
+                  float* mag_x, float* mag_y, float* mag_z);
     void getSensor(sensor_t* accel, sensor_t* mag);
     byte checkstatus();
     bool checktiming();

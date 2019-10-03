@@ -221,7 +221,7 @@ bool AccMag::getEvent(IMUmeas* imu) {
   return true;
 }
 
-bool AccMag::getEvent(float &float1, float &float2, float &float3) {
+bool AccMag::getEvent(float* acc_x, float* acc_y, float* acc_z) {
   _wire.beginTransmission((byte)FXOS8700_ADDRESS);
   _wire.write(FXOS8700_REGISTER_STATUS); 
   _wire.endTransmission();
@@ -237,14 +237,15 @@ bool AccMag::getEvent(float &float1, float &float2, float &float3) {
 
   // Could fuse scaling/ normalisation/ quantisation ops here
 
-  float1 = (int16_t)((axhi << 8) | axlo) >> 2;
-  float2 = (int16_t)((ayhi << 8) | aylo) >> 2;
-  float3 = (int16_t)((azhi << 8) | azlo) >> 2;
+  *acc_x = (int16_t)((axhi << 8) | axlo) >> 2;
+  *acc_y = (int16_t)((ayhi << 8) | aylo) >> 2;
+  *acc_z = (int16_t)((azhi << 8) | azlo) >> 2;
 
   return true;
 }
 
-bool AccMag::getEvent(float &float1, float &float2, float &float3, float &float4, float &float5, float &float6) {
+bool AccMag::getEvent(float* acc_x, float* acc_y, float* acc_z, 
+                      float* mag_x, float* mag_y, float* mag_z) {
 
   _wire.beginTransmission((byte)FXOS8700_ADDRESS);
   _wire.write(FXOS8700_REGISTER_STATUS); 
@@ -265,12 +266,12 @@ bool AccMag::getEvent(float &float1, float &float2, float &float3, float &float4
   uint8_t mzhi = _wire.read();
   uint8_t mzlo = _wire.read();
 
-  float1 = (int16_t)((axhi << 8) | axlo) >> 2;
-  float2 = (int16_t)((ayhi << 8) | aylo) >> 2;
-  float3 = (int16_t)((azhi << 8) | azlo) >> 2;
-  float4 = (int16_t)((mxhi << 8) | mxlo);
-  float5 = (int16_t)((myhi << 8) | mylo);
-  float6 = (int16_t)((mzhi << 8) | mzlo);
+  *acc_x = (int16_t)((axhi << 8) | axlo) >> 2;
+  *acc_y = (int16_t)((ayhi << 8) | aylo) >> 2;
+  *acc_z = (int16_t)((azhi << 8) | azlo) >> 2;
+  *mag_x = (int16_t)((mxhi << 8) | mxlo);
+  *mag_y = (int16_t)((myhi << 8) | mylo);
+  *mag_z = (int16_t)((mzhi << 8) | mzlo);
 
   return true;
 }
