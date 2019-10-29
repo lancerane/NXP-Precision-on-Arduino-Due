@@ -30,7 +30,7 @@ byte Gyro::read8(byte reg) {
 /***************************************************************************
  PUBLIC FUNCTIONS
  ***************************************************************************/
-byte Gyro::checkstatus() {
+byte Gyro::checkStatus() {
 
   /* 0 = no data available
   >0, <15 = part data ready
@@ -40,7 +40,7 @@ byte Gyro::checkstatus() {
   return read8(GYRO_REGISTER_STATUS);
 }
 
-bool Gyro::checktiming() {
+bool Gyro::checkTiming() {
 
   /*Get these by continuously polling the registers for fresh data. Throw away the first packet, then get 
   the timings on arrival of packet 2 and 3. In between polls, read the data registers to reset the 
@@ -62,7 +62,7 @@ bool Gyro::checktiming() {
       return false;
     }
 
-    value = checkstatus();
+    value = checkStatus();
     switch (value) {
       default: timings.looptimes[i] = micros() - start_t;
         i ++;
@@ -186,6 +186,30 @@ bool Gyro::getEvent(IMUmeas* imu) {
 }
 
 bool Gyro::getEvent(float* gyr_x, float* gyr_y, float* gyr_z) {
+
+  _wire.beginTransmission((byte)FXAS21002C_ADDRESS);
+  _wire.write(GYRO_REGISTER_STATUS); 
+  _wire.endTransmission();
+  _wire.requestFrom((byte)FXAS21002C_ADDRESS, (byte)7);
+
+  _wire.read();
+  uint8_t xhi = _wire.read();
+  uint8_t xlo = _wire.read();
+  uint8_t yhi = _wire.read();
+  uint8_t ylo = _wire.read();
+  uint8_t zhi = _wire.read();
+  uint8_t zlo = _wire.read();
+
+  // Could fuse scaling/ normalisation/ quantisation ops here
+
+  *gyr_x = (int16_t)((xhi << 8) | xlo);
+  *gyr_y = (int16_t)((yhi << 8) | ylo);
+  *gyr_z = (int16_t)((zhi << 8) | zlo);
+
+  return true;
+}
+
+bool Gyro::getEvent(int8_t* gyr_x, int8_t* gyr_y, int8_t* gyr_z) {
 
   _wire.beginTransmission((byte)FXAS21002C_ADDRESS);
   _wire.write(GYRO_REGISTER_STATUS); 

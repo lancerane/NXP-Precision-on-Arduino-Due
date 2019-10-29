@@ -86,11 +86,12 @@ class AccMag : public Adafruit_Sensor {
     bool getEvent();
     bool getEvent(IMUmeas* imu);
     bool getEvent(float* acc_x, float* acc_y, float* acc_z);
+    bool getEvent(int8_t* acc_x, int8_t* acc_y, int8_t* acc_z);
     bool getEvent(float* acc_x, float* acc_y, float* acc_z, 
                   float* mag_x, float* mag_y, float* mag_z);
     void getSensor(sensor_t* accel, sensor_t* mag);
-    byte checkstatus();
-    bool checktiming();
+    byte checkStatus();
+    bool checkTiming();
 
     fxos8700RawData_t accel_raw; /* Raw values from last sensor read */
     fxos8700RawData_t mag_raw;   /* Raw values from last sensor read */

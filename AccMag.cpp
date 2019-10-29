@@ -36,7 +36,7 @@ byte AccMag::read8(byte reg) {
  PUBLIC FUNCTIONS
  ***************************************************************************/
 
-byte AccMag::checkstatus() {
+byte AccMag::checkStatus() {
 
 // check the data-ready status
 // 0 = no data available
@@ -46,7 +46,7 @@ byte AccMag::checkstatus() {
   return read8(FXOS8700_REGISTER_STATUS);
 }
 
-bool AccMag::checktiming() {
+bool AccMag::checkTiming() {
 
   // Get these by continuously polling the registers for fresh data. Throw away the first packet, then get the timings on arrival of packet 2 and 3
   // Timings can be used to attempt synchronisation
@@ -69,7 +69,7 @@ bool AccMag::checktiming() {
       return false;
     }
 
-    value = checkstatus();
+    value = checkStatus();
     switch (value) {
       default: timings.looptimes[i] = micros() - start_t;
         i ++;
@@ -136,9 +136,9 @@ bool AccMag::begin(fxos8700AccelRange_t rng) {
   write8(FXOS8700_REGISTER_CTRL_REG1, 0x05); //00000101
   /* Magnetometer settings */
   /* Hybrid Mode, Over Sampling Rate = 16 */
-  write8(FXOS8700_REGISTER_MCTRL_REG1, 0x1F);
+  write8(FXOS8700_REGISTER_MCTRL_REG1, 0x1F); // 00011111
   /* Jump to reg 0x33 after reading 0x06 (auto-increment from accelerometer to mag during burst read)*/
-  write8(FXOS8700_REGISTER_MCTRL_REG2, 0x20);
+  write8(FXOS8700_REGISTER_MCTRL_REG2, 0x20); // 00100000
 
   return true;
 }
@@ -227,7 +227,30 @@ bool AccMag::getEvent(float* acc_x, float* acc_y, float* acc_z) {
   _wire.endTransmission();
   _wire.requestFrom((byte)FXOS8700_ADDRESS, (byte)7);
 
-  _wire.read();
+  _wire.read(); // disregard the status
+  uint8_t axhi = _wire.read();
+  uint8_t axlo = _wire.read();
+  uint8_t ayhi = _wire.read();
+  uint8_t aylo = _wire.read();
+  uint8_t azhi = _wire.read();
+  uint8_t azlo = _wire.read();
+
+  // Could fuse scaling/ normalisation/ quantisation ops here
+
+  *acc_x = (int16_t)((axhi << 8) | axlo) >> 2;
+  *acc_y = (int16_t)((ayhi << 8) | aylo) >> 2;
+  *acc_z = (int16_t)((azhi << 8) | azlo) >> 2;
+
+  return true;
+}
+
+bool AccMag::getEvent(int8_t* acc_x, int8_t* acc_y, int8_t* acc_z) {
+  _wire.beginTransmission((byte)FXOS8700_ADDRESS);
+  _wire.write(FXOS8700_REGISTER_STATUS); 
+  _wire.endTransmission();
+  _wire.requestFrom((byte)FXOS8700_ADDRESS, (byte)7);
+
+  _wire.read(); // disregard the status
   uint8_t axhi = _wire.read();
   uint8_t axlo = _wire.read();
   uint8_t ayhi = _wire.read();

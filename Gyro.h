@@ -91,9 +91,10 @@ class Gyro : public Adafruit_Sensor {
     bool getEvent();
     bool getEvent(IMUmeas* imu);
     bool getEvent(float* gyr_x, float* gyr_y, float* gyr_z);
+    bool getEvent(int8_t* gyr_x, int8_t* gyr_y, int8_t* gyr_z);
     void getSensor(sensor_t* sensor);
-    byte checkstatus();
-    bool checktiming();
+    byte checkStatus();
+    bool checkTiming();
     
     /*! Raw gyroscope values from last sensor read */
     gyroRawData_t raw;
